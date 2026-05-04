@@ -1,0 +1,71 @@
+name: daily-job-tracker
+
+on:
+  schedule:
+    # 06:00 America/Chicago = 11:00 UTC (CDT) / 12:00 UTC (CST)
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}  # lets you trigger manually from the Actions tab
+
+permissions:
+  contents: write  # needed to commit the updated tracker back
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore token files from secrets
+        run: |
+          mkdir -p data/tokens
+          echo "$TOKEN_PERSONAL" | base64 -d > data/tokens/personal.json
+          echo "$TOKEN_JOBS1"    | base64 -d > data/tokens/jobs1.json
+          echo "$TOKEN_JOBS2"    | base64 -d > data/tokens/jobs2.json
+          echo "$TOKEN_JOBS3"    | base64 -d > data/tokens/jobs3.json
+          echo "$TOKEN_JOBS4"    | base64 -d > data/tokens/jobs4.json
+          echo "$TOKEN_JOBS5"    | base64 -d > data/tokens/jobs5.json
+          echo "$TOKEN_JOBS6"    | base64 -d > data/tokens/jobs6.json
+          echo "$TOKEN_JOBS7"    | base64 -d > data/tokens/jobs7.json
+          echo "$TOKEN_JOBS8"    | base64 -d > data/tokens/jobs8.json
+        env:
+          TOKEN_PERSONAL: ${{ secrets.TOKEN_PERSONAL }}
+          TOKEN_JOBS1:    ${{ secrets.TOKEN_JOBS1 }}
+          TOKEN_JOBS2:    ${{ secrets.TOKEN_JOBS2 }}
+          TOKEN_JOBS3:    ${{ secrets.TOKEN_JOBS3 }}
+          TOKEN_JOBS4:    ${{ secrets.TOKEN_JOBS4 }}
+          TOKEN_JOBS5:    ${{ secrets.TOKEN_JOBS5 }}
+          TOKEN_JOBS6:    ${{ secrets.TOKEN_JOBS6 }}
+          TOKEN_JOBS7:    ${{ secrets.TOKEN_JOBS7 }}
+          TOKEN_JOBS8:    ${{ secrets.TOKEN_JOBS8 }}
+
+      - name: Run tracker
+        env:
+          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_CLIENT_SECRET_JSON: ${{ secrets.GMAIL_CLIENT_SECRET_JSON }}
+          GMAIL_ACCOUNTS:           "personal,jobs1,jobs2,jobs3,jobs4,jobs5,jobs6,jobs7,jobs8"
+          DIGEST_TO:                ${{ secrets.DIGEST_TO }}
+          DIGEST_FROM_ACCOUNT:      "personal"
+          CLAUDE_MODEL:             "claude-haiku-4-5-20251001"
+        run: python src/main.py
+
+      - name: Commit updated tracker + state
+        run: |
+          git config user.name  "job-tracker-bot"
+          git config user.email "job-tracker-bot@users.noreply.github.com"
+          # Wipe tokens before any commit so they can never be accidentally committed
+          rm -rf data/tokens
+          git add data/tracker.xlsx data/processed_message_ids.json data/account_emails.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "tracker: $(date -u +%Y-%m-%d) run"
+            git push
+          else
+            echo "no changes to commit"
+          fi
