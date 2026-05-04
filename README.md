@@ -124,6 +124,16 @@ everything works, the next scheduled run will happen tomorrow at 12:00 UTC.
   outreach tracked separately, add a category there and a status mapping
   in `tracker.py`.
 
+
+
+<img width="901" height="426" alt="image" src="https://github.com/user-attachments/assets/c71b74ba-48bd-430e-b39a-4eefa71f621a" />
+
+
+<img width="901" height="632" alt="image" src="https://github.com/user-attachments/assets/68ff44b6-f3bf-4b1b-b792-b08080de6640" />
+
+
+
+
 ## Cost
 
 At ~50 emails/day across 5 accounts, batched 10 per Claude call, you're
