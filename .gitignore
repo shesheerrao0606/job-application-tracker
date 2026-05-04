@@ -10,3 +10,6 @@ data/tokens/*.json
 # but DO commit the tracker + seen-ids state
 !data/tracker.xlsx
 !data/processed_message_ids.json
+
+__pycache__/
+*.pyc
